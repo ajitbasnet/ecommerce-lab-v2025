@@ -6,15 +6,16 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 import sqlite3
 from datetime import datetime
+from jinja2 import Environment
+import json
 
 app = Flask(__name__)
 app.secret_key = 'your-secret-key-here-change-in-production'
 app.config['SESSION_TYPE'] = 'filesystem'
 app.config['SESSION_PERMANENT'] = False
+app.config['SESSION_FILE_DIR'] = os.path.join(app.root_path, 'flask_session')
+os.makedirs(app.config['SESSION_FILE_DIR'], exist_ok=True)
 Session(app)
-
-
-
 
 # Load products data
 def load_products():
@@ -38,7 +39,7 @@ def load_products():
                     "id": 2,
                     "name": "Nike React Infinity Run",
                     "price": 13280.00,
-                    "image": "nike/react-infinity.jpg ",
+                    "image": "nike/W+NIKE+REACT+INFINITY+RUN+FK+3.jpg",
                     "description": "Designed to help reduce injury and keep you running.",
                     "sizes": ["7", "8", "9", "10", "11", "12"],
                     "featured": False
@@ -49,7 +50,7 @@ def load_products():
                     "id": 3,
                     "name": "Adidas Ultraboost 22",
                     "price": 14940.00,
-                    "image": "adidas/ultraboost-22.jpg",
+                    "image": "adidas/Adidas-Ultraboost-22.jpg",
                     "description": "Our most responsive running shoe yet.",
                     "sizes": ["7", "8", "9", "10", "11", "12"],
                     "featured": True
@@ -58,7 +59,7 @@ def load_products():
                     "id": 4,
                     "name": "Adidas Stan Smith",
                     "price": 6640.00,
-                    "image": "adidas/stan-smith.jpg ",
+                    "image": "adidas/Stan_Smith_Shoes_White_M20324_06_standard.jpg",
                     "description": "The iconic tennis shoe that never goes out of style.",
                     "sizes": ["7", "8", "9", "10", "11", "12"],
                     "featured": False
@@ -69,7 +70,7 @@ def load_products():
                     "id": 5,
                     "name": "Puma RS-X",
                     "price": 9130.00,
-                    "image": "puma/rs-x.jpg ",
+                    "image": "puma/RS-X³-Puzzle-Men's-Sneakers.jpg",
                     "description": "Bold design meets maximum comfort.",
                     "sizes": ["7", "8", "9", "10", "11", "12"],
                     "featured": True
@@ -80,7 +81,7 @@ def load_products():
                     "id": 6,
                     "name": "New Balance 990v5",
                     "price": 14525.00,
-                    "image": "newbalance/990v5.jpg ",
+                    "image": "newbalance/NewBalance990v5.jpg",
                     "description": "Made in USA premium running shoe.",
                     "sizes": ["7", "8", "9", "10", "11", "12"],
                     "featured": False
@@ -91,7 +92,7 @@ def load_products():
                     "id": 7,
                     "name": "Converse Chuck 70",
                     "price": 4565.00,
-                    "image": "converse/chuck-70.jpg",
+                    "image": "converse/converse-chuck-70-hi-chucks-black-black.jpg",
                     "description": "The original basketball shoe, now a timeless classic.",
                     "sizes": ["7", "8", "9", "10", "11", "12"],
                     "featured": True
@@ -101,7 +102,6 @@ def load_products():
 
 
 products_data = load_products()
-
 
 
 # Authentication decorator
@@ -361,6 +361,9 @@ def process_checkout():
     tax = total * 0.10
     final_total = total + tax + (0 if total >= 8300 else 830)
 
+    # Order date
+    order_date = datetime.now().strftime('%B %d, %Y')
+
     # Save order to database
     conn = sqlite3.connect('ecommerce.db')
     c = conn.cursor()
@@ -384,8 +387,13 @@ def process_checkout():
     session['last_order'] = order_number
     session['cart'] = []
     session.modified = True
-    return render_template('order_confirmation.html', order_number=order_number, total=final_total)
 
+    return render_template(
+        'order_confirmation.html',
+        order_number=order_number,
+        total=final_total,
+        order_date=order_date
+    )
 
 # Footer pages
 @app.route('/about')
@@ -490,12 +498,17 @@ def login():
         if user and check_password_hash(user[2], password):
             session['user_id'] = user[0]
             session['user_name'] = user[1]
-            session['is_admin'] = user[3]
-            return redirect(url_for('index'))
+            session['is_admin'] = bool(user[3])  # <- cast to boolean here
+
+            if session['is_admin']:
+                return redirect(url_for('admin'))
+            else:
+                return redirect(url_for('index'))
         else:
             return render_template('login.html', error='Invalid email or password')
 
     return render_template('login.html')
+
 
 
 @app.route('/logout')
@@ -525,15 +538,30 @@ def profile():
 @admin_required
 def admin():
     conn = sqlite3.connect('ecommerce.db')
+    conn.row_factory = sqlite3.Row
     c = conn.cursor()
+
+    # Fetch orders
     c.execute("SELECT * FROM orders ORDER BY created_at DESC")
     orders = c.fetchall()
+
+    # Calculate total revenue and pending orders
+    total_revenue = sum(order['total'] for order in orders if order['total'])
+    pending_orders = sum(1 for order in orders if order['status'] == 'pending')
+
     conn.close()
 
-    return render_template('admin.html', orders=orders, products=products_data)
+    return render_template(
+        'admin.html',
+        orders=orders,
+        products=products_data,  # Ensure this is globally defined or imported
+        total_revenue=total_revenue,
+        pending_orders=pending_orders
+    )
 
-
-
+@app.context_processor
+def utility_processor():
+    return dict(loads=json.loads)
 
 if __name__ == '__main__':
     app.run(debug=True)

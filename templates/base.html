@@ -14,6 +14,77 @@
     <link rel="icon" type="image" href="{{ url_for('static', filename='icons/resh.jpg') }}">
 
     {% block extra_head %}{% endblock %}
+<style>
+.admin-nav .nav-link {
+    color: #333;
+    background-color: transparent;
+    transition: background-color 0.3s, color 0.3s;
+}
+
+.admin-nav .nav-link:hover {
+    background-color: #fff;
+    color: black;
+}
+
+.admin-nav .nav-link.active {
+    background-color: white;
+    color: black;
+}
+
+.profile-nav .nav-link {
+    color: #333;
+    background-color: transparent;
+    transition: background-color 0.3s, color 0.3s;
+    border-radius: 0.25rem;
+    padding: 10px 15px;
+}
+
+.profile-nav .nav-link:hover {
+    background-color: white; /* Bootstrap info color */
+    color: black;
+}
+
+.profile-nav .nav-link.active {
+    background-color: white; /* Darker info */
+    color: black;
+}
+.product-image {
+  position: relative;
+}
+
+.wishlist-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 20; /* above overlay */
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  font-size: 1.5rem;
+  color: #ff4757; /* heart color */
+  transition: color 0.3s ease;
+}
+
+.wishlist-btn:disabled {
+  cursor: default;
+  color: #e74c3c; /* darker red for added */
+}
+
+.product-overlay {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  z-index: 10; /* below wishlist btn */
+  background: rgba(0,0,0,0.3);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.product-image:hover .product-overlay {
+  opacity: 1;
+}
+
+</style>
+
 
 </head>
 <body>
@@ -175,6 +246,45 @@
     <!-- Custom JS -->
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 
-    {% block extra_scripts %}{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  // On page load, mark already added wishlist items as added
+  const wishlist = JSON.parse(localStorage.getItem('wishlist') || '[]');
+  document.querySelectorAll('.wishlist-btn').forEach(btn => {
+    try {
+      const product = JSON.parse(btn.dataset.product);
+      if (wishlist.find(item => item.id === product.id)) {
+        btn.innerHTML = '<i class="fas fa-heart"></i> Added';
+        btn.disabled = true;
+      }
+    } catch (e) {
+      console.error('Invalid product data on wishlist button', e);
+    }
+  });
+
+  // Add to wishlist on click
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('.wishlist-btn');
+    if (!btn) return;
+
+    try {
+      const productData = JSON.parse(btn.dataset.product);
+      let wishlist = JSON.parse(localStorage.getItem('wishlist') || '[]');
+
+      if (!wishlist.find(item => item.id === productData.id)) {
+        wishlist.push(productData);
+        localStorage.setItem('wishlist', JSON.stringify(wishlist));
+        btn.innerHTML = '<i class="fas fa-heart"></i> Added';
+        btn.disabled = true;
+      }
+    } catch (err) {
+      console.error('Error parsing product data:', err);
+    }
+  });
+});
+</script>
+{% endblock %}
 </body>
 </html>

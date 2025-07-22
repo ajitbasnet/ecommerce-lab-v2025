@@ -21,7 +21,7 @@
                             <div class="detail-card">
                                 <h5 class="mb-3">Order Information</h5>
                                 <p><strong>Order Number:</strong> <span class="text-accent">{{ order_number }}</span></p>
-                                <p><strong>Order Date:</strong> {{ moment().format('MMMM DD, YYYY') }}</p>
+                                <p><strong>Order Date:</strong> {{ order_date }}</p>
                                 <p><strong>Total Amount:</strong> <span class="text-accent">₹{{ "{:,.0f}".format(total) }}</span></p>
                                 <p><strong>Payment Status:</strong> <span class="badge badge-success">Paid</span></p>
                             </div>

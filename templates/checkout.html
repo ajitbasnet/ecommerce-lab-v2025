@@ -104,7 +104,7 @@
                 <div class="order-item">
                     <div class="d-flex justify-content-between">
                         <span>{{ item.name }} ({{ item.size }})</span>
-                        <span>₹{{ "{:,.0f}".format(item.price * item.quantity) }}</span>
+                        <span>Rs.{{ "{:,.0f}".format(item.price * item.quantity) }}</span>
                     </div>
                     <small class="text-secondary">Qty: {{ item.quantity }}</small>
                 </div>
@@ -113,11 +113,11 @@
                 <hr>
                 <div class="summary-row">
                     <span>Subtotal:</span>
-                    <span>₹{{ "{:,.0f}".format(total) }}</span>
+                    <span>Rs.{{ "{:,.0f}".format(total) }}</span>
                 </div>
                 <div class="summary-row tax-row">
                     <span>Tax (10%):</span>
-                    <span>₹{{ "{:,.0f}".format(total * 0.10) }}</span>
+                    <span>Rs.{{ "{:,.0f}".format(total * 0.10) }}</span>
                 </div>
                 <div class="summary-row">
                     <span>Shipping:</span>
@@ -125,7 +125,7 @@
                 </div>
                 <div class="summary-row total">
                     <span>Total:</span>
-                    <span>₹{{ "{:,.0f}".format(total + (total * 0.10) + (0 if total >= 8300 else 830)) }}</span>
+                    <span>Rs.{{ "{:,.0f}".format(total + (total * 0.10) + (0 if total >= 8300 else 830)) }}</span>
                 </div>
             </div>
         </div>
